@@ -18,8 +18,6 @@ type config struct {
 	redisHost string
 	redisPort string
 
-	// sut_base is the base address of the SUT.  For example, http://1.2.3.4:8080
-	sut_base string
 	// runKey helps keep multiple runs from interfering with each other. This should be unique for each run.
 	runKey string
 }
@@ -42,7 +40,6 @@ func (c *config) setFromEnv() error {
 	errs = append(errs, set(assignment{&c.dbPort, "MYSQL_PORT", nil}))
 	errs = append(errs, set(assignment{&c.redisHost, "REDIS_HOST", nil}))
 	errs = append(errs, set(assignment{&c.redisPort, "REDIS_PORT", "6379"}))
-	errs = append(errs, set(assignment{&c.sut_base, "SUT_BASE", nil}))
 	errs = append(errs, set(assignment{&c.runKey, "RUN_KEY", "6379"}))
 
 	// this format allows us to report on every missing

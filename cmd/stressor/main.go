@@ -29,9 +29,11 @@ func main() {
 	// setup generator
 	rc := mustNewRedisClient(cfg, log)
 	feed := redis_feed.NewFeed(rc)
-	latencyWriter := mustNewLatencyDB(cfg, log)
-	gen := loadgen.NewGenerator(cfg.sut_base, feed, latencyWriter, log)
+	lw := mustNewLatencyDB(cfg, log)
+	sdb := redisdb.NewScaleDB(rc, cfg.runKey)
+	gen := loadgen.NewGenerator(cfg.sut_base, feed, lw, sdb, log)
 
+	// FIXME: don't run this test forever
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
@@ -42,7 +44,7 @@ func main() {
 	}()
 
 	// listen for interrupts
-	quitOnInterrupt(log)
+	quitOnInterrupt(cancel, log)
 }
 
 func mustNewRedisClient(cfg config, log *logrus.Entry) *redis.Client {
@@ -60,7 +62,7 @@ func mustNewRedisClient(cfg config, log *logrus.Entry) *redis.Client {
 	return rc
 }
 
-func mustNewLatencyDB(cfg config, log *logrus.Entry) *mysql.DB {
+func mustNewLatencyDB(cfg config, log *logrus.Entry) *mysql.LatencyDB {
 	readDSN := fmt.Sprintf("%s:%s@tcp(%s:%s)/?parseTime=true",
 		cfg.dbUser,
 		cfg.dbPass,
@@ -80,7 +82,7 @@ func mustNewLatencyDB(cfg config, log *logrus.Entry) *mysql.DB {
 	db.SetMaxOpenConns(15)
 	db.SetConnMaxLifetime(time.Minute * time.Duration(5))
 
-	return mysql.NewDB(db)
+	return mysql.NewLatencyDB(db)
 }
 
 func mustNewLog(cfg config) *logrus.Entry {
@@ -97,7 +99,7 @@ func mustNewLog(cfg config) *logrus.Entry {
 	return logrus.NewEntry(log)
 }
 
-func quitOnInterrupt(log *logrus.Entry) {
+func quitOnInterrupt(cancel context.CancelFunc, log *logrus.Entry) {
 	// listen for interrupt
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGHUP, syscall.SIGTERM)
@@ -106,9 +108,7 @@ func quitOnInterrupt(log *logrus.Entry) {
 
 	gracefulWait := time.Second * 10
 	log.WithField("signal", sig).Infof("caught interrupt signal, the server will have %v to shutdown gracefully", gracefulWait)
+	cancel()
 
-	select {
-	case <-time.After(gracefulWait):
-		log.Fatal("graceful timeout expired, exiting anyway")
-	}
+	<-time.After(gracefulWait)
 }
