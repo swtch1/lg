@@ -14,6 +14,8 @@ Commands are assumed to be running from a Linux BASH shell or similar.
 - run [stressor](./cmd/stressor) with `go run ./cmd/stressor`
 - run [coordinator](./cmd/coordinator) with `go run ./cmd/coordinator`
 
+For testing all components save the coordinator can be started and kept running.  Re-run the coordinator several times to see the scaling react to the dummy server load and various response times.
+
 Multiple terminal sessions are recommended but each service may be started in the same terminal by adding `&` to the end of the command.
 
 ## Components
