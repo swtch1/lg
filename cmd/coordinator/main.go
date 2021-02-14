@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v7"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"github.com/swtch1/lg/loadgen"
@@ -21,7 +22,9 @@ import (
 func main() {
 	// get config details
 	var cfg config
-	cfg.setFromEnv()
+	if err := cfg.setFromEnv(); err != nil {
+		logrus.Fatal(err)
+	}
 
 	log := mustNewLog(cfg)
 
@@ -36,8 +39,7 @@ func main() {
 		log.Fatal("target latency must be an integer, the target latency in MS for the SUT")
 	}
 
-	// FIXME: don't run this thing forever
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	go func() {

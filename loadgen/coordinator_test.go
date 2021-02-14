@@ -66,3 +66,53 @@ func TestLastNLatencies_SlicesCorrectAmt(t *testing.T) {
 		})
 	}
 }
+
+func TestIncrease(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name     string
+		upper    float64
+		lower    float64
+		pct      float64
+		expected float64
+	}{
+		{
+			name:     "one",
+			upper:    5000,
+			lower:    4000,
+			pct:      0.1,
+			expected: 4100,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			f := increaseFromLower(tt.lower, tt.upper, tt.pct)
+			require.Equal(t, tt.expected, f)
+		})
+	}
+}
+
+func TestDecrease(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name     string
+		upper    float64
+		lower    float64
+		pct      float64
+		expected float64
+	}{
+		{
+			name:     "one",
+			upper:    5000,
+			lower:    4000,
+			pct:      0.1,
+			expected: 4900,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			f := decreaseFromUpper(tt.lower, tt.upper, tt.pct)
+			require.Equal(t, tt.expected, f)
+		})
+	}
+}

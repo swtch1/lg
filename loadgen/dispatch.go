@@ -46,9 +46,6 @@ func (d *dispatcher) dispatch(r domain.Request, ni nodeInfo, log *logrus.Entry) 
 		}
 	}
 
-	// FIXME: this is specifically meant to work with out test server
-	req.Header.Add("CODE", "200")
-
 	ctx, cancel := context.WithTimeout(context.Background(), d.timeout)
 	defer cancel()
 

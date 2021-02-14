@@ -4,10 +4,10 @@ Distributed load generation.
 
 ## Quick Start
 
-Commands are assumed to be running from a Linux BASH shell or similar.
+Commands are assumed to be running from a Linux BASH shell or similar.  Trailing `&` can be removed when running across multiple terminal sessions.
 
 - source the local environment variables with `source ./hack/local_env_vars-source.sh`
-- start dependencies with `./hack/run_mysql.sh`
+- start infrastructure dependencies with `./hack/run_infra.sh`
 - wait until the mysql database is live. basic verification can be done with `watch 'mysql -h 127.0.0.1 -u$MYSQL_USER -p$MYSQL_PASS -e "exit" && echo "ready" || echo "not ready"'`
 - create mysql schema with `./hack/db_schema_load.sh`
 - run [dummy server](./cmd/dummy) with `go run ./cmd/dummy &`
@@ -37,10 +37,10 @@ const m = getM()
 ub, lb := 3*m, 0
 c := getC()
 if c < m {
-    ub = c
+    ub = f
     f--
 } else {
-    lb = c
+    lb = f
     f++
 }
 ```

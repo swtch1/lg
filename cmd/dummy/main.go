@@ -13,7 +13,7 @@ import (
 
 func main() {
 	r := mux.NewRouter()
-	r.HandleFunc("/", globalHandler)
+	r.PathPrefix("/").Handler(http.HandlerFunc(globalHandler))
 
 	port := os.Getenv("DUMMY_PORT")
 	if port == "" {

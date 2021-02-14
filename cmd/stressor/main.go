@@ -22,7 +22,9 @@ import (
 func main() {
 	// get config details
 	var cfg config
-	cfg.setFromEnv()
+	if err := cfg.setFromEnv(); err != nil {
+		logrus.Fatal(err)
+	}
 
 	log := mustNewLog(cfg)
 
@@ -33,8 +35,7 @@ func main() {
 	sdb := redisdb.NewScaleDB(rc, cfg.runKey)
 	gen := loadgen.NewGenerator(cfg.sut_base, feed, lw, sdb, log)
 
-	// FIXME: don't run this test forever
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// run the generator for a time

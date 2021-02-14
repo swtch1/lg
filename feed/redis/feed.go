@@ -59,12 +59,41 @@ var fakeRedis = []domain.RRPair{
 			Method: "GET",
 			Headers: http.Header{
 				"Authentication": []string{"Bearer foo"},
+				"CODE":           []string{"200"}, // works with dummy HTTP server
 			},
 			Path: "/foo",
 		},
 		Resp: domain.Response{
 			StatusCode: 200,
 			Body:       []byte(`{"foo": "bar"}`),
+		},
+	},
+	{
+		Req: domain.Request{
+			Method: "POST",
+			Headers: http.Header{
+				"Authentication": []string{"Bearer bar"},
+				"CODE":           []string{"201"}, // works with dummy HTTP server
+			},
+			Path: "/foo/bar",
+		},
+		Resp: domain.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"bar": "baz"}`),
+		},
+	},
+	{
+		Req: domain.Request{
+			Method: "PUT",
+			Headers: http.Header{
+				"Authentication": []string{"Bearer baz"},
+				"CODE":           []string{"200"}, // works with dummy HTTP server
+			},
+			Path: "/foo/bar/baz",
+		},
+		Resp: domain.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"baz": "bam"}`),
 		},
 	},
 }

@@ -75,19 +75,19 @@ func (c *Coordinator) Run(ctx context.Context, targetLatency int, measureTick ti
 
 			if current < tgt {
 				// we need to push harder
-				upperBound = current
+				upperBound = factor
 
 				// remember, since the factor here is a wait time we go down to speed up
-				factor = lowerFactor(lowerBound, upperBound, scaleBy)
+				factor = decreaseFromUpper(upperBound, lowerBound, scaleBy)
 			} else {
 				// we need to back off
-				lowerBound = current
+				lowerBound = factor
 
 				// remember, since the factor here is a wait time we go up to slow down
-				factor = raiseFactor(lowerBound, upperBound, scaleBy)
+				factor = increaseFromLower(upperBound, lowerBound, scaleBy)
 			}
 
-			c.log.Trace("setting scale factor to %f", factor)
+			c.log.WithField("factor", factor).Trace("setting scale factor")
 			err = c.factorStore.SetScaleFactor(factor)
 			if err != nil {
 				return fmt.Errorf("failed to set scale factor: %w", err)
@@ -111,10 +111,12 @@ func avgLatencies(ls []store.AggLatency) float64 {
 	return float64(agg) / float64(len(ls))
 }
 
-func raiseFactor(min, max, pct float64) float64 {
-
+func increaseFromLower(upperBound, lowerBound, pct float64) float64 {
+	diff := upperBound - lowerBound
+	return lowerBound + (diff * (1 - pct))
 }
 
-func lowerFactor(min, max, pct float64) float64 {
-
+func decreaseFromUpper(upperBound, lowerBound, pct float64) float64 {
+	diff := upperBound - lowerBound
+	return upperBound - (diff * (1 - pct))
 }

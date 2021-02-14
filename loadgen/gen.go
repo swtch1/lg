@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -97,6 +98,8 @@ func (g *Generator) feedAndReport() {
 		g.log.WithError(err).Error("failed to get next RR pair")
 		return
 	}
+	pair.Req.Path = strings.TrimRight(g.baseAddr, "/") + "/" + pair.Req.Path
+
 	resp, m, err := g.dispatcher.dispatch(pair.Req, g.info, g.log)
 	if err != nil {
 		g.log.WithError(err).Error("failed to make successful outbound request")
