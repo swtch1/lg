@@ -8,15 +8,15 @@ import (
 	"github.com/swtch1/lg/store"
 )
 
-func NewDB(db *sqlx.DB) *DB {
-	return &DB{sqlDB: db}
+func NewLatencyDB(db *sqlx.DB) *LatencyDB {
+	return &LatencyDB{sqlDB: db}
 }
 
-type DB struct {
+type LatencyDB struct {
 	sqlDB *sqlx.DB
 }
 
-func (db *DB) GetLatency() ([]store.AggLatency, error) {
+func (db *LatencyDB) GetLatency() ([]store.AggLatency, error) {
 	s := squirrel.
 		Select(
 			"id",
@@ -40,7 +40,7 @@ func (db *DB) GetLatency() ([]store.AggLatency, error) {
 	return ls, nil
 }
 
-func (db *DB) CreateLatencies(ls []store.AggLatency) error {
+func (db *LatencyDB) CreateLatencies(ls []store.AggLatency) error {
 
 	s := squirrel.
 		Insert("lg.agg_latency").

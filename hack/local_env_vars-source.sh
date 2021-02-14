@@ -13,3 +13,6 @@ export REDIS_PORT="6379"
 
 export DUMMY_PORT="8080"
 export SUT_BASE="127.0.0.1"
+
+export RUN_KEY="RUN01"
+export SUT_TARGET_LATENCY_MS="500"

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -30,12 +31,17 @@ func main() {
 	sdb := redisdb.NewScaleDB(rc, cfg.runKey)
 	coordinator := loadgen.NewCoordinator(lr, sdb, log)
 
-	// FIXME: don't run this test forever
+	tgtLatency, err := strconv.Atoi(cfg.sutTargetLatency)
+	if err != nil {
+		log.Fatal("target latency must be an integer, the target latency in MS for the SUT")
+	}
+
+	// FIXME: don't run this thing forever
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
 	go func() {
-		log.WithError(coordinator.Run(ctx)).Fatal("coordinator run terminated")
+		log.WithError(coordinator.Run(ctx, tgtLatency, time.Second)).Fatal("coordinator run terminated")
 	}()
 
 	quitOnInterrupt(cancel, log)

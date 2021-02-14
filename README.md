@@ -37,12 +37,12 @@ const m = getM()
 ub, lb := 3*m, 0
 c := getC()
 if c < m {
+    ub = c
     f--
-    ub = f
 } else {
+    lb = c
     f++
-    lb = f
 }
 ```
 
-Adjusting `ub` and `lb` help drive the SUT toward maximum throughput with acceptable response time, which not allowing `f` to ping pong wildly past bounds that have already been tested.
+Adjusting `ub` and `lb` help drive the SUT toward maximum throughput with acceptable response time without allowing `f` to ping pong wildly past bounds that have already been tested.
