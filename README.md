@@ -16,8 +16,6 @@ Commands are assumed to be running from a Linux BASH shell or similar.
 
 For testing all components save the coordinator can be started and kept running.  Re-run the coordinator several times to see the scaling react to the dummy server load and various response times.
 
-Multiple terminal sessions are recommended but each service may be started in the same terminal by adding `&` to the end of the command.
-
 ## Components
 
 - The [stressor](./cmd/stressor) reads request/response pairs from a data store and generates load with those pairs directed at the SUT (system under test).
