@@ -47,4 +47,5 @@ if c < m {
 }
 ```
 
-Adjusting `ub` and `lb` help drive the SUT toward maximum throughput with acceptable response time without allowing `f` to ping pong wildly past bounds that have already been tested.
+Adjusting `ub` and `lb` help drive the SUT toward maximum throughput with acceptable response time without allowing `f` to ping pong wildly past bounds that have already been tested.  The
+actual implementation can be found in [coordinator.go](https://github.com/swtch1/lg/blob/main/loadgen/coordinator.go).
