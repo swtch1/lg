@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -19,6 +20,8 @@ import (
 	"github.com/swtch1/lg/store/redisdb"
 )
 
+const appName = "stressor"
+
 func main() {
 	// get config details
 	var cfg config
@@ -27,13 +30,23 @@ func main() {
 	}
 
 	log := mustNewLog(cfg)
+	log = log.WithField("app", appName)
 
-	// setup generator
-	rc := mustNewRedisClient(cfg, log)
-	feed := redis_feed.NewFeed(rc)
-	lw := mustNewLatencyDB(cfg, log)
-	sdb := redisdb.NewScaleDB(rc, cfg.runKey)
-	gen := loadgen.NewGenerator(cfg.sut_base, feed, lw, sdb, log)
+	var gen *loadgen.Generator
+	{
+		// set a maximum wait time that makes sense in case the service cannot find a scale factor
+		tgtLatency, err := strconv.Atoi(cfg.sutTargetLatency)
+		if err != nil {
+			log.Fatal("target latency must be an integer, the target latency in MS for the SUT")
+		}
+		maxWait := (time.Millisecond * time.Duration(tgtLatency) * 3)
+
+		rc := mustNewRedisClient(cfg, log)
+		feed := redis_feed.NewFeed(rc)
+		lw := mustNewLatencyDB(cfg, log)
+		sdb := redisdb.NewScaleDB(rc, cfg.runKey)
+		gen = loadgen.NewGenerator(cfg.sut_base, maxWait, feed, lw, sdb, log)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

@@ -14,7 +14,7 @@ export REDIS_HOST="127.0.0.1"
 export REDIS_PORT="6379"
 
 export DUMMY_PORT="8080"
-export SUT_BASE="127.0.0.1"
+export SUT_BASE="http://127.0.0.1:8080"
 
 export RUN_KEY="RUN01"
 export SUT_TGT_LATENCY_MS="500"

@@ -78,7 +78,7 @@ func TestIncrease(t *testing.T) {
 		expected float64
 	}{
 		{
-			name:     "one",
+			name:     "1",
 			upper:    5000,
 			lower:    4000,
 			pct:      0.1,
@@ -86,8 +86,8 @@ func TestIncrease(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			f := increaseFromLower(tt.lower, tt.upper, tt.pct)
-			require.Equal(t, tt.expected, f)
+			increaseLower(&tt.lower, tt.upper, tt.pct)
+			require.Equal(t, tt.expected, tt.lower)
 		})
 	}
 }
@@ -103,16 +103,23 @@ func TestDecrease(t *testing.T) {
 		expected float64
 	}{
 		{
-			name:     "one",
+			name:     "1",
 			upper:    5000,
 			lower:    4000,
 			pct:      0.1,
 			expected: 4900,
 		},
+		{
+			name:     "2",
+			upper:    1500,
+			lower:    0,
+			pct:      0.1,
+			expected: 1350,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			f := decreaseFromUpper(tt.lower, tt.upper, tt.pct)
-			require.Equal(t, tt.expected, f)
+			decreaseUpper(&tt.upper, tt.lower, tt.pct)
+			require.Equal(t, tt.expected, tt.upper)
 		})
 	}
 }

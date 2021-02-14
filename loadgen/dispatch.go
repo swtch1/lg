@@ -80,7 +80,7 @@ func (d *dispatcher) dispatch(r domain.Request, ni nodeInfo, log *logrus.Entry) 
 	m := metric{
 		latency: store.AggLatency{
 			NodeID:    ni.ID,
-			LatencyMS: uint64(took.Milliseconds()),
+			LatencyMS: float64(took.Milliseconds()),
 		},
 	}
 

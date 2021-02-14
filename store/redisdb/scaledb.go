@@ -28,14 +28,17 @@ func (db *ScaleDB) SetScaleFactor(f float64) error {
 	return nil
 }
 
-func (db *ScaleDB) GetScaleFactor() (float64, error) {
+func (db *ScaleDB) GetScaleFactor() (float64, bool, error) {
 	r, err := db.rc.Get(db.key).Result()
 	if err != nil {
-		return 0, fmt.Errorf("failed to get key %s: %w", db.key, err)
+		if err == redis.Nil {
+			return 0, false, nil
+		}
+		return 0, false, fmt.Errorf("failed to get key %s: %w", db.key, err)
 	}
 	f, err := strconv.ParseFloat(r, 64)
 	if err != nil {
-		return 0, fmt.Errorf("scale factor is not a float: %w", err)
+		return 0, false, fmt.Errorf("scale factor is not a float: %w", err)
 	}
-	return f, nil
+	return f, true, nil
 }

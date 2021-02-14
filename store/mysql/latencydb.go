@@ -41,7 +41,6 @@ func (db *LatencyDB) GetLatency() ([]store.AggLatency, error) {
 }
 
 func (db *LatencyDB) CreateLatencies(ls []store.AggLatency) error {
-
 	s := squirrel.
 		Insert("lg.agg_latency").
 		Columns(
@@ -60,6 +59,23 @@ func (db *LatencyDB) CreateLatencies(ls []store.AggLatency) error {
 	}
 
 	q, args, err := s.ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = db.sqlDB.Exec(q, args...)
+	if err != nil {
+		return fmt.Errorf("failed to exec: %w", err)
+	}
+	return nil
+}
+
+// PurgeLatencies from the database.
+func (db *LatencyDB) PurgeLatencies() error {
+	q, args, err := squirrel.
+		Delete("lg.agg_latency").
+		Where("1 = 1").
+		ToSql()
 	if err != nil {
 		return fmt.Errorf("failed to build query: %w", err)
 	}

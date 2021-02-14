@@ -9,25 +9,27 @@ import (
 	"github.com/swtch1/lg/store"
 )
 
-const scalePct = 10
+// scalePct should be a number between 0 and 1 which tells the coordinator how much to move the high or low water mark
+const scalePct = 0.1
 
-func NewCoordinator(r LatencyReader, s FactorSetter, log *logrus.Entry) *Coordinator {
+func NewCoordinator(ls LatencyReadPurger, fs FactorSetter, log *logrus.Entry) *Coordinator {
 	return &Coordinator{
-		read:        r,
-		factorStore: s,
-		log:         log,
+		latencyStore: ls,
+		factorStore:  fs,
+		log:          log,
 	}
 }
 
 type (
 	Coordinator struct {
-		read        LatencyReader
-		factorStore FactorSetter
-		log         *logrus.Entry
+		latencyStore LatencyReadPurger
+		factorStore  FactorSetter
+		log          *logrus.Entry
 	}
 
-	LatencyReader interface {
+	LatencyReadPurger interface {
 		GetLatency() ([]store.AggLatency, error)
+		PurgeLatencies() error
 	}
 
 	FactorSetter interface {
@@ -36,7 +38,6 @@ type (
 )
 
 func (c *Coordinator) Run(ctx context.Context, targetLatency int, measureTick time.Duration) error {
-	scaleBy := float64(scalePct) / 100.0
 	tgt := float64(targetLatency)
 
 	var upperBound, lowerBound float64 = 3 * tgt, 0
@@ -46,8 +47,13 @@ func (c *Coordinator) Run(ctx context.Context, targetLatency int, measureTick ti
 		factor = float64(5000)
 	}
 
+	err := c.latencyStore.PurgeLatencies()
+	if err != nil {
+		return fmt.Errorf("failed to purge latency records: %w", err)
+	}
+
 	// the the factor initially
-	err := c.factorStore.SetScaleFactor(factor)
+	err = c.factorStore.SetScaleFactor(factor)
 	if err != nil {
 		return fmt.Errorf("failed to set scale factor: %w", err)
 	}
@@ -61,7 +67,7 @@ func (c *Coordinator) Run(ctx context.Context, targetLatency int, measureTick ti
 		case <-ticker.C:
 			// TODO: we're just getting all latencies here but a better solution would be to get the
 			// TODO: last n latencies so that we aren't grabbing every record every time
-			ls, err := c.read.GetLatency()
+			ls, err := c.latencyStore.GetLatency()
 			if err != nil {
 				return fmt.Errorf("cannot get latency details from DB, abort: %w", err)
 			}
@@ -74,20 +80,19 @@ func (c *Coordinator) Run(ctx context.Context, targetLatency int, measureTick ti
 			current := avgLatencies(ls)
 
 			if current < tgt {
-				// we need to push harder
-				upperBound = factor
-
-				// remember, since the factor here is a wait time we go down to speed up
-				factor = decreaseFromUpper(upperBound, lowerBound, scaleBy)
+				decreaseUpper(&upperBound, lowerBound, scalePct)
+				factor = upperBound
 			} else {
-				// we need to back off
-				lowerBound = factor
-
-				// remember, since the factor here is a wait time we go up to slow down
-				factor = increaseFromLower(upperBound, lowerBound, scaleBy)
+				increaseLower(&lowerBound, upperBound, scalePct)
+				factor = lowerBound
 			}
 
-			c.log.WithField("factor", factor).Trace("setting scale factor")
+			c.log.WithFields(logrus.Fields{
+				"latencyAvg": fmt.Sprintf("%.3f", current),
+				"factor":     fmt.Sprintf("%.3f", factor),
+				"boundLower": fmt.Sprintf("%.3f", lowerBound),
+				"boundUpper": fmt.Sprintf("%.3f", upperBound),
+			}).Trace("setting scale factor")
 			err = c.factorStore.SetScaleFactor(factor)
 			if err != nil {
 				return fmt.Errorf("failed to set scale factor: %w", err)
@@ -104,19 +109,19 @@ func lastNLatencies(ls []store.AggLatency, n int) []store.AggLatency {
 }
 
 func avgLatencies(ls []store.AggLatency) float64 {
-	var agg uint64
+	var agg float64
 	for _, l := range ls {
 		agg += l.LatencyMS
 	}
-	return float64(agg) / float64(len(ls))
+	return agg / float64(len(ls))
 }
 
-func increaseFromLower(upperBound, lowerBound, pct float64) float64 {
-	diff := upperBound - lowerBound
-	return lowerBound + (diff * (1 - pct))
+func increaseLower(lowerBound *float64, upperBound, pct float64) {
+	diff := upperBound - *lowerBound
+	*lowerBound = *lowerBound + (diff * pct)
 }
 
-func decreaseFromUpper(upperBound, lowerBound, pct float64) float64 {
-	diff := upperBound - lowerBound
-	return upperBound - (diff * (1 - pct))
+func decreaseUpper(upperBound *float64, lowerBound, pct float64) {
+	diff := *upperBound - lowerBound
+	*upperBound = *upperBound - (diff * pct)
 }

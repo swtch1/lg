@@ -1,7 +1,6 @@
 package loadgen
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -13,7 +12,7 @@ import (
 	"github.com/swtch1/lg/store"
 )
 
-func NewGenerator(targetAddr string, f Feeder, w LatencyWriter, g FactorGetter, log *logrus.Entry) *Generator {
+func NewGenerator(targetAddr string, maxWait time.Duration, f Feeder, w LatencyWriter, g FactorGetter, log *logrus.Entry) *Generator {
 	return &Generator{
 		info:        newNodeInfo(),
 		baseAddr:    targetAddr,
@@ -21,6 +20,7 @@ func NewGenerator(targetAddr string, f Feeder, w LatencyWriter, g FactorGetter, 
 		feed:        f,
 		write:       w,
 		factorStore: g,
+		maxWait:     maxWait,
 		log:         log,
 	}
 }
@@ -38,6 +38,7 @@ type (
 		feed        Feeder
 		write       LatencyWriter
 		factorStore FactorGetter
+		maxWait     time.Duration
 		log         *logrus.Entry
 	}
 
@@ -50,7 +51,7 @@ type (
 		CreateLatencies(ls []store.AggLatency) error
 	}
 	FactorGetter interface {
-		GetScaleFactor() (float64, error)
+		GetScaleFactor() (float64, bool, error)
 	}
 )
 
@@ -84,11 +85,18 @@ func (g *Generator) loadEmUp(ctx context.Context, wg *sync.WaitGroup) {
 func (g *Generator) pause() error {
 	// TODO: the scale factor is retrieved for every single requests here which likely doesn't make sense
 	// TODO: instead we should retrieve this every so often and serve the same number for multiple requests
-	f, err := g.factorStore.GetScaleFactor()
+	f, ok, err := g.factorStore.GetScaleFactor()
 	if err != nil {
 		return fmt.Errorf("failed to get scale factor: %w", err)
 	}
-	time.Sleep(time.Millisecond * time.Duration(f))
+
+	wait := time.Millisecond * time.Duration(f)
+	if !ok || wait > g.maxWait {
+		g.log.WithField("maxWait", g.maxWait).Trace("using max wait")
+		wait = g.maxWait
+	}
+
+	time.Sleep(wait)
 	return nil
 }
 
@@ -113,6 +121,11 @@ func (g *Generator) feedAndReport() {
 		return
 	}
 
+	g.log.WithFields(logrus.Fields{
+		"path":   pair.Req.Path,
+		"respMS": m.latency.LatencyMS,
+	}).Trace("request complete")
+
 	err = g.write.CreateLatencies([]store.AggLatency{m.latency})
 	if err != nil {
 		g.log.WithError(err).Error("failed to store latency.. this could be a problem")
@@ -121,11 +134,6 @@ func (g *Generator) feedAndReport() {
 }
 
 func (g *Generator) respMatch(r1, r2 domain.Response) bool {
-	if bytes.Compare(r1.Body, r2.Body) != 0 {
-		return false
-	}
-	if r1.StatusCode != r2.StatusCode {
-		return false
-	}
+	// TODO: do... something here.  seems like a real comparison would be a nice touch
 	return true
 }

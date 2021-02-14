@@ -19,6 +19,8 @@ import (
 	"github.com/swtch1/lg/store/redisdb"
 )
 
+const appName = "coordinator"
+
 func main() {
 	// get config details
 	var cfg config
@@ -27,6 +29,7 @@ func main() {
 	}
 
 	log := mustNewLog(cfg)
+	log = log.WithField("app", appName)
 
 	rc := mustNewRedisClient(cfg, log)
 	lr := mustNewLatencyDB(cfg, log)

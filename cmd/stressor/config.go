@@ -21,7 +21,8 @@ type config struct {
 	// sut_base is the base address of the SUT.  For example, http://1.2.3.4:8080
 	sut_base string
 	// runKey helps keep multiple runs from interfering with each other. This should be unique for each run.
-	runKey string
+	runKey           string
+	sutTargetLatency string
 }
 
 type assignment struct {
@@ -44,6 +45,7 @@ func (c *config) setFromEnv() error {
 	errs = append(errs, set(assignment{&c.redisPort, "REDIS_PORT", "6379"}))
 	errs = append(errs, set(assignment{&c.sut_base, "SUT_BASE", nil}))
 	errs = append(errs, set(assignment{&c.runKey, "RUN_KEY", "6379"}))
+	errs = append(errs, set(assignment{&c.sutTargetLatency, "SUT_TGT_LATENCY_MS", nil}))
 
 	// this format allows us to report on every missing
 	// configuration element rather than just the next one
